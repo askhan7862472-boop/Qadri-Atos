@@ -1,0 +1,325 @@
+
+
+<!DOCTYPE html>
+
+<html lang="ur" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Qadri Autos Billing</title>
+
+<style>
+
+body{font-family:Arial,sans-serif;background:#f1f3f5;margin:0;padding:15px}
+
+.container{max-width:700px;margin:auto;background:white;padding:18px;border-radius:12px}
+
+h2{text-align:center;color:#173d63}
+
+input,button{padding:11px;margin:5px 0;border:1px solid #bbb;border-radius:6px;font-size:15px}
+
+input{width:95%;box-sizing:border-box}
+
+button{background:#173d63;color:white;border:0;cursor:pointer}
+
+table{width:100%;border-collapse:collapse;margin-top:12px}
+
+td,th{border:1px solid #ccc;padding:7px;text-align:center}
+
+th{background:#e7edf3}
+
+.total{font-size:18px;font-weight:bold;margin:12px 0}
+
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+@media print{
+
+body{background:white;padding:0}
+
+.container{box-shadow:none;padding:5px}
+
+.no-print{display:none!important}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>Qadri Auto Spare Parts and Hardware</h2>
+
+<p style="text-align:center">بل نمبر: <span id="billNo"></span></p>
+
+<hr>
+
+<div class="no-print">
+
+<label>کسٹمر کا نام</label>
+
+<input id="customer" placeholder="کسٹمر کا نام لکھیں">
+
+<table id="items">
+
+<thead><tr>
+
+<th>سامان</th><th>تعداد</th><th>خرید</th><th>فروخت</th><th>رقم</th>
+
+</tr></thead>
+
+<tbody></tbody>
+
+</table>
+
+<button onclick="addItem()">+ نیا سامان</button>
+
+<label>وصول شدہ رقم</label>
+
+<input id="paid" type="number" value="0" oninput="calculate()">
+
+<div class="total">کل رقم: <span id="total">0</span> روپے</div>
+
+<div class="total">منافع: <span id="profit">0</span> روپے</div>
+
+<div class="total">بقایا: <span id="due">0</span> روپے</div>
+
+<div class="actions">
+
+<button onclick="saveBill()">بل محفوظ کریں</button>
+
+<button onclick="window.print()">بل پرنٹ کریں</button>
+
+<button onclick="newBill()">نیا بل</button>
+
+</div>
+
+</div>
+
+<div id="receipt">
+
+<h3 style="text-align:center">فروخت کا بل</h3>
+
+<p>کسٹمر: <span id="rCustomer"></span></p>
+
+<p>بل نمبر: <span id="rNo"></span></p>
+
+<table>
+
+<thead><tr>
+
+<th>سامان</th><th>تعداد</th><th>قیمت</th><th>رقم</th>
+
+</tr></thead>
+
+<tbody id="receiptRows"></tbody>
+
+</table>
+
+<p>کل رقم: <span id="rTotal">0</span> روپے</p>
+
+<p>وصول شدہ: <span id="rPaid">0</span> روپے</p>
+
+<p>بقایا: <span id="rDue">0</span> روپے</p>
+
+</div>
+
+<div class="no-print">
+
+<hr>
+
+<h3>محفوظ شدہ بل</h3>
+
+<div id="savedBills"></div>
+
+</div>
+
+</div>
+
+<script>
+
+let billNumber=Number(localStorage.getItem("billNumber")||1);
+
+function showNumber(){
+
+document.getElementById("billNo").textContent=billNumber;
+
+document.getElementById("rNo").textContent=billNumber;
+
+}
+
+function addItem(){
+
+let row=document.createElement("tr");
+
+row.innerHTML=`
+
+<td><input placeholder="سامان کا نام"></td>
+
+<td><input type="number" value="1" min="1" oninput="calculate()"></td>
+
+<td><input type="number" value="0" min="0" oninput="calculate()"></td>
+
+<td><input type="number" value="0" min="0" oninput="calculate()"></td>
+
+<td class="amount">0</td>`;
+
+document.querySelector("#items tbody").appendChild(row);
+
+calculate();
+
+}
+
+function calculate(){
+
+let total=0,profit=0;
+
+document.querySelectorAll("#items tbody tr").forEach(row=>{
+
+let inputs=row.querySelectorAll("input");
+
+let qty=Number(inputs[1].value)||0;
+
+let buy=Number(inputs[2].value)||0;
+
+let sell=Number(inputs[3].value)||0;
+
+let amount=qty*sell;
+
+row.querySelector(".amount").textContent=amount;
+
+total+=amount;
+
+profit+=qty*(sell-buy);
+
+});
+
+let paid=Number(document.getElementById("paid").value)||0;
+
+document.getElementById("total").textContent=total;
+
+document.getElementById("profit").textContent=profit;
+
+document.getElementById("due").textContent=total-paid;
+
+}
+
+function getBill(){
+
+let rows=[];
+
+document.querySelectorAll("#items tbody tr").forEach(row=>{
+
+let x=row.querySelectorAll("input");
+
+if(x[0].value.trim()){
+
+rows.push({
+
+name:x[0].value,qty:Number(x[1].value),
+
+buy:Number(x[2].value),sell:Number(x[3].value)
+
+});
+
+}
+
+});
+
+let total=rows.reduce((s,x)=>s+x.qty*x.sell,0);
+
+let cost=rows.reduce((s,x)=>s+x.qty*x.buy,0);
+
+let paid=Number(document.getElementById("paid").value)||0;
+
+return {no:billNumber,customer:document.getElementById("customer").value,
+
+rows,total,cost,paid,due:total-paid,profit:total-cost};
+
+}
+
+function saveBill(){
+
+let bill=getBill();
+
+if(!bill.rows.length){alert("پہلے سامان درج کریں");return;}
+
+let bills=JSON.parse(localStorage.getItem("bills")||"[]");
+
+bills.push(bill);
+
+localStorage.setItem("bills",JSON.stringify(bills));
+
+billNumber++;
+
+localStorage.setItem("billNumber",billNumber);
+
+showNumber();
+
+showSaved();
+
+alert("بل محفوظ ہوگیا");
+
+}
+
+function showSaved(){
+
+let bills=JSON.parse(localStorage.getItem("bills")||"[]");
+
+document.getElementById("savedBills").innerHTML=bills.map(b=>
+
+`<p>بل نمبر ${b.no} — ${b.customer||"کسٹمر"} — ${b.total} روپے — بقایا ${b.due} روپے</p>`
+
+).join("");
+
+}
+
+function newBill(){
+
+document.querySelector("#items tbody").innerHTML="";
+
+document.getElementById("customer").value="";
+
+document.getElementById("paid").value=0;
+
+addItem();calculate();
+
+}
+
+function printBill(){
+
+let b=getBill();
+
+document.getElementById("rCustomer").textContent=b.customer;
+
+document.getElementById("rNo").textContent=b.no;
+
+document.getElementById("rTotal").textContent=b.total;
+
+document.getElementById("rPaid").textContent=b.paid;
+
+document.getElementById("rDue").textContent=b.due;
+
+document.getElementById("receiptRows").innerHTML=b.rows.map(x=>
+
+`<tr><td>${x.name}</td><td>${x.qty}</td><td>${x.sell}</td><td>${x.qty*x.sell}</td></tr>`
+
+).join("");
+
+}
+
+window.addEventListener("beforeprint",printBill);
+
+showNumber();addItem();showSaved();
+
+</script>
+
+</body>
+
+</html>
