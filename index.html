@@ -1,28 +1,477 @@
-Qadri Auto Spare Parts and Hardware
-دکان کا حساب، خرید و فروخت اور اسٹاک
-بل / فروخت
-پروڈکٹ / اسٹاک
-خریداری
-کسٹمر کھاتہ
-رپورٹس
-پرانے بل
-فروخت کا بل
-کسٹمر کا نام
-وصول شدہ رقم
-سامان
-اسٹاک
-تعداد
-فروخت قیمت
-رقم
-ختم
+<!DOCTYPE html>
 
-+ سامان شامل کریں
-کل رقم: 0 روپے
-منافع: 0 روپے
-بقایا: 0 روپے
-بل محفوظ کریں
-بل پرنٹ کریں
-نیا بل
-اہم: یہ ورژن اسی موبائل / براؤزر کے اندر ڈیٹا محفوظ کرتا ہے۔ Safari کا ڈیٹا صاف کرنے یا دوسرے موبائل پر کھولنے سے پہلے بیک اپ ضرور بنائیں۔
-ڈیٹا بیک اپ ڈاؤن لوڈ کریں
-بیک اپ واپس لائیں
+<html lang="ur" dir="rtl">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Qadri Auto Spare Parts and Hardware</title>
+
+<style>
+
+*{box-sizing:border-box}
+
+body{font-family:Arial,sans-serif;margin:0;background:#f3f5f7;color:#18212b}
+
+header{background:#123b63;color:white;padding:18px;text-align:center}
+
+header h2{margin:0 0 8px;font-size:21px}
+
+.tabs{display:flex;overflow:auto;background:#fff;position:sticky;top:0;z-index:2}
+
+.tabs button{border:0;background:white;padding:13px 12px;white-space:nowrap;font-size:14px}
+
+.tabs button.active{background:#1769aa;color:white}
+
+.page{display:none;padding:14px;max-width:900px;margin:auto}
+
+.page.active{display:block}
+
+.panel{background:white;border-radius:10px;padding:14px;margin:12px 0;box-shadow:0 1px 5px #0001}
+
+h3{margin:0 0 12px}
+
+label{display:block;margin:9px 0 4px;font-size:14px}
+
+input,select{width:100%;padding:11px;border:1px solid #ccd3da;border-radius:7px;font-size:16px;background:white}
+
+button.action{background:#1769aa;color:white;border:0;border-radius:7px;padding:11px 14px;margin:7px 3px 0 0;font-size:15px}
+
+button.danger{background:#b83232}
+
+table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+
+th,td{border:1px solid #dce1e5;padding:8px;text-align:center}
+
+th{background:#edf2f6}
+
+.scroll{overflow:auto}
+
+.totals{display:flex;gap:8px;flex-wrap:wrap}
+
+.totals div{background:#edf4fa;padding:10px;border-radius:8px;flex:1;min-width:110px}
+
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+@media(max-width:500px){.row{grid-template-columns:1fr}}
+
+@media print{body *{visibility:hidden}#receipt,#receipt *{visibility:visible}#receipt{display:block!important;position:absolute;top:0;right:0;width:100%;padding:15px}}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+
+<h2>Qadri Auto Spare Parts and Hardware</h2>
+
+<div>دکان کا حساب، خرید و فروخت اور اسٹاک</div>
+
+</header>
+
+<nav class="tabs">
+
+<button class="active" onclick="showPage('sale',this)">فروخت کا بل</button>
+
+<button onclick="showPage('products',this)">پروڈکٹ / اسٹاک</button>
+
+<button onclick="showPage('purchase',this)">خریداری</button>
+
+<button onclick="showPage('customers',this)">کسٹمر کھاتہ</button>
+
+<button onclick="showPage('reports',this)">رپورٹس</button>
+
+<button onclick="showPage('old',this)">پرانے بل</button>
+
+</nav>
+
+<section id="sale" class="page active">
+
+<div class="panel">
+
+<h3>نیا فروخت بل</h3>
+
+<label>کسٹمر کا نام</label>
+
+<input id="customer" placeholder="کسٹمر کا نام">
+
+<div class="row">
+
+<div><label>سامان منتخب کریں</label><select id="saleProduct"></select></div>
+
+<div><label>تعداد</label><input id="saleQty" type="number" min="1" value="1"></div>
+
+</div>
+
+<button class="action" onclick="addSaleItem()">+ سامان شامل کریں</button>
+
+<div class="scroll">
+
+<table>
+
+<thead><tr><th>سامان</th><th>تعداد</th><th>قیمت</th><th>رقم</th><th>ختم</th></tr></thead>
+
+<tbody id="saleRows"></tbody>
+
+</table>
+
+</div>
+
+<div class="row">
+
+<div><label>وصول شدہ رقم</label><input id="paid" type="number" min="0" value="0" oninput="updateTotals()"></div>
+
+<div class="totals">
+
+<div>کل رقم: <b id="total">0</b> روپے</div>
+
+<div>منافع: <b id="profit">0</b> روپے</div>
+
+<div>بقایا: <b id="due">0</b> روپے</div>
+
+</div>
+
+</div>
+
+<button class="action" onclick="saveBill()">بل محفوظ کریں</button>
+
+<button class="action" onclick="printBill()">بل پرنٹ کریں</button>
+
+<button class="action" onclick="newBill()">نیا بل</button>
+
+</div>
+
+<div id="receipt" style="display:none"></div>
+
+</section>
+
+<section id="products" class="page">
+
+<div class="panel">
+
+<h3>نیا پروڈکٹ / اسٹاک</h3>
+
+<input id="pname" placeholder="سامان کا نام">
+
+<div class="row">
+
+<div><label>خرید قیمت</label><input id="pcost" type="number" min="0"></div>
+
+<div><label>فروخت قیمت</label><input id="psell" type="number" min="0"></div>
+
+<div><label>موجودہ تعداد</label><input id="pstock" type="number" min="0" value="0"></div>
+
+</div>
+
+<button class="action" onclick="addProduct()">پروڈکٹ محفوظ کریں</button>
+
+</div>
+
+<div class="panel">
+
+<h3>اسٹاک کی فہرست</h3>
+
+<div class="scroll">
+
+<table>
+
+<thead><tr><th>سامان</th><th>خرید</th><th>فروخت</th><th>اسٹاک</th><th>حذف</th></tr></thead>
+
+<tbody id="productRows"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+<section id="purchase" class="page">
+
+<div class="panel">
+
+<h3>خریداری درج کریں</h3>
+
+<label>سامان</label><select id="purchaseProduct"></select>
+
+<div class="row">
+
+<div><label>تعداد</label><input id="purchaseQty" type="number" min="1" value="1"></div>
+
+<div><label>فی عدد خرید قیمت</label><input id="purchaseCost" type="number" min="0"></div>
+
+</div>
+
+<button class="action" onclick="addPurchase()">خریداری محفوظ کریں</button>
+
+<p id="purchaseMsg"></p>
+
+</div>
+
+</section>
+
+<section id="customers" class="page">
+
+<div class="panel">
+
+<h3>کسٹمر کھاتہ</h3>
+
+<div class="scroll">
+
+<table>
+
+<thead><tr><th>کسٹمر</th><th>کل بل</th><th>وصولی</th><th>بقایا</th></tr></thead>
+
+<tbody id="customerRows"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+<section id="reports" class="page">
+
+<div class="panel">
+
+<h3>کاروبار کی رپورٹ</h3>
+
+<div class="totals">
+
+<div>کل فروخت: <b id="rSales">0</b></div>
+
+<div>کل منافع: <b id="rProfit">0</b></div>
+
+<div>کل بقایا: <b id="rDue">0</b></div>
+
+<div>اسٹاک کی تعداد: <b id="rStock">0</b></div>
+
+</div>
+
+<button class="action" onclick="backup()">ڈیٹا بیک اپ ڈاؤن لوڈ کریں</button>
+
+<label>بیک اپ واپس لائیں</label>
+
+<input type="file" id="restoreFile" accept=".json" onchange="restore(event)">
+
+</div>
+
+</section>
+
+<section id="old" class="page">
+
+<div class="panel">
+
+<h3>پرانے بل</h3>
+
+<div class="scroll">
+
+<table>
+
+<thead><tr><th>بل نمبر</th><th>تاریخ</th><th>کسٹمر</th><th>کل رقم</th><th>بقایا</th></tr></thead>
+
+<tbody id="oldRows"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</section>
+
+<script>
+
+const KEY='qadri_pos_v2';
+
+let db=JSON.parse(localStorage.getItem(KEY)||'{"products":[],"bills":[],"purchases":[]}');
+
+let cart=[];
+
+function persist(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
+
+function showPage(id,btn){
+
+document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+
+document.getElementById(id).classList.add('active');
+
+document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+
+btn.classList.add('active');renderAll()
+
+}
+
+function money(n){return Math.round(Number(n)||0)}
+
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+function productOptions(){
+
+let opts='<option value="">سامان منتخب کریں</option>'+db.products.map(p=>`<option value="${p.id}">${esc(p.name)} (اسٹاک ${p.stock})</option>`).join('');
+
+saleProduct.innerHTML=opts;purchaseProduct.innerHTML=opts
+
+}
+
+function addProduct(){
+
+let name=pname.value.trim(),cost=money(pcost.value),sell=money(psell.value),stock=money(pstock.value);
+
+if(!name)return alert('سامان کا نام لکھیں');
+
+db.products.push({id:Date.now()+Math.random(),name,cost,sell,stock});
+
+pname.value=pcost.value=psell.value='';pstock.value=0;persist()
+
+}
+
+function addSaleItem(){
+
+let p=db.products.find(x=>String(x.id)===saleProduct.value),q=money(saleQty.value);
+
+if(!p||q<1)return alert('سامان اور درست تعداد منتخب کریں');
+
+if(q>p.stock)return alert('اسٹاک میں اتنا سامان موجود نہیں');
+
+let old=cart.find(x=>x.id===p.id);
+
+if(old){if(old.qty+q>p.stock)return alert('اسٹاک میں اتنا سامان موجود نہیں');old.qty+=q}
+
+else cart.push({id:p.id,name:p.name,qty:q,price:p.sell,cost:p.cost});
+
+renderCart()
+
+}
+
+function cartTotal(){return cart.reduce((s,x)=>s+x.qty*x.price,0)}
+
+function cartProfit(){return cart.reduce((s,x)=>s+x.qty*(x.price-x.cost),0)}
+
+function renderCart(){
+
+saleRows.innerHTML=cart.map((x,i)=>`<tr><td>${esc(x.name)}</td><td>${x.qty}</td><td>${x.price}</td><td>${x.qty*x.price}</td><td><button class="action danger" onclick="removeCart(${i})">X</button></td></tr>`).join('');
+
+updateTotals()
+
+}
+
+function removeCart(i){cart.splice(i,1);renderCart()}
+
+function updateTotals(){
+
+let t=cartTotal(),p=money(paid.value);
+
+total.textContent=t;profit.textContent=cartProfit();due.textContent=Math.max(0,t-p)
+
+}
+
+function saveBill(){
+
+if(!cart.length)return alert('پہلے سامان شامل کریں');
+
+let t=cartTotal(),p=money(paid.value);
+
+if(p>t)return alert('وصول شدہ رقم کل رقم سے زیادہ نہیں ہو سکتی');
+
+for(let x of cart){let pr=db.products.find(z=>z.id===x.id);if(!pr||pr.stock<x.qty)return alert('اسٹاک تبدیل ہو گیا ہے، دوبارہ چیک کریں')}
+
+cart.forEach(x=>db.products.find(z=>z.id===x.id).stock-=x.qty);
+
+let bill={no:db.bills.length?Math.max(...db.bills.map(x=>x.no))+1:1,date:new Date().toLocaleString('en-PK'),customer:customer.value.trim()||'Walk-in',items:cart.map(x=>({...x})),total:t,paid:p,due:t-p,profit:cartProfit()};
+
+db.bills.push(bill);persist();makeReceipt(bill);
+
+alert('بل محفوظ ہو گیا۔ بل نمبر '+bill.no);
+
+cart=[];customer.value='';paid.value=0;renderCart()
+
+}
+
+function makeReceipt(b){
+
+receipt.innerHTML=`<h2 style="text-align:center">Qadri Auto Spare Parts and Hardware</h2><p>بل نمبر: ${b.no}　 تاریخ: ${b.date}</p><p>کسٹمر: ${esc(b.customer)}</p><table><tr><th>سامان</th><th>تعداد</th><th>قیمت</th><th>رقم</th></tr>${b.items.map(x=>`<tr><td>${esc(x.name)}</td><td>${x.qty}</td><td>${x.price}</td><td>${x.qty*x.price}</td></tr>`).join('')}</table><h3>کل رقم: ${b.total} روپے</h3><p>وصول شدہ: ${b.paid} روپے　 بقایا: ${b.due} روپے</p><p style="text-align:center">شکریہ</p>`
+
+}
+
+function printBill(){if(!receipt.innerHTML)return alert('پہلے بل محفوظ کریں');window.print()}
+
+function newBill(){cart=[];customer.value='';paid.value=0;receipt.innerHTML='';renderCart()}
+
+function addPurchase(){
+
+let p=db.products.find(x=>String(x.id)===purchaseProduct.value),q=money(purchaseQty.value),c=money(purchaseCost.value);
+
+if(!p||q<1)return alert('سامان اور تعداد منتخب کریں');
+
+p.stock+=q;p.cost=c;
+
+db.purchases.push({name:p.name,qty:q,cost:c,date:new Date().toLocaleString('en-PK')});
+
+purchaseMsg.textContent='خریداری محفوظ ہو گئی';persist()
+
+}
+
+function renderAll(){
+
+productOptions();
+
+productRows.innerHTML=db.products.map(p=>`<tr><td>${esc(p.name)}</td><td>${p.cost}</td><td>${p.sell}</td><td>${p.stock}</td><td><button class="action danger" onclick="delProduct('${p.id}')">حذف</button></td></tr>`).join('');
+
+customerRows.innerHTML=Object.values(db.bills.reduce((a,b)=>{let x=a[b.customer]||{name:b.customer,total:0,paid:0,due:0};x.total+=b.total;x.paid+=b.paid;x.due+=b.due;a[b.customer]=x;return a},{})).map(x=>`<tr><td>${esc(x.name)}</td><td>${x.total}</td><td>${x.paid}</td><td>${x.due}</td></tr>`).join('');
+
+oldRows.innerHTML=db.bills.slice().reverse().map(b=>`<tr><td>${b.no}</td><td>${b.date}</td><td>${esc(b.customer)}</td><td>${b.total}</td><td>${b.due}</td></tr>`).join('');
+
+rSales.textContent=db.bills.reduce((s,b)=>s+b.total,0);
+
+rProfit.textContent=db.bills.reduce((s,b)=>s+b.profit,0);
+
+rDue.textContent=db.bills.reduce((s,b)=>s+b.due,0);
+
+rStock.textContent=db.products.reduce((s,p)=>s+p.stock,0);
+
+renderCart()
+
+}
+
+function delProduct(id){
+
+if(confirm('کیا یہ پروڈکٹ حذف کرنی ہے؟')){db.products=db.products.filter(p=>String(p.id)!==id);persist()}
+
+}
+
+function backup(){
+
+let a=document.createElement('a'),u=URL.createObjectURL(new Blob([JSON.stringify(db,null,2)],{type:'application/json'}));
+
+a.href=u;a.download='qadri-backup.json';a.click();URL.revokeObjectURL(u)
+
+}
+
+function restore(e){
+
+let f=e.target.files[0];if(!f)return;
+
+let r=new FileReader();
+
+r.onload=()=>{try{let d=JSON.parse(r.result);if(!d.products||!d.bills)throw 0;db=d;persist();alert('بیک اپ واپس آ گیا')}catch{alert('یہ درست بیک اپ فائل نہیں')}};
+
+r.readAsText(f)
+
+}
+
+renderAll();
+
+</script>
+
+</body>
+
+</html>
